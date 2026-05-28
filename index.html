@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- ### EDITABLE: Cambia este titulo; aparece en la pestana del navegador. -->
+  <title>Monitor de Fase Lunar</title>
+  <style>
+    /* ### EDITABLE: Colores principales de la interfaz. Puedes cambiar estos hexadecimales. */
+    :root {
+      color-scheme: dark;
+      --bg: #050814;
+      --line: #5a4819;
+      --gold: #ffc83c;
+      --gold-soft: #d8a62b;
+      --label: #b4963c;
+      --text: #f0ebd2;
+      --shadow: #080d22;
+    }
+
+    /* ### EDITABLE: Fondo general, separacion exterior y fuente de toda la pagina. */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.22) 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 24%, rgba(255,255,255,.16) 0 1px, transparent 2px),
+        radial-gradient(circle at 34% 72%, rgba(255,255,255,.18) 0 1px, transparent 2px),
+        radial-gradient(circle at 68% 82%, rgba(255,255,255,.12) 0 1px, transparent 2px),
+        var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* ### EDITABLE: Tamano maximo y estilo del panel principal. */
+    .screen {
+      width: min(920px, 100%);
+      border: 1px solid rgba(255, 200, 60, .22);
+      background: linear-gradient(180deg, #070b1b, #0a1025);
+      box-shadow: 0 24px 70px rgba(0,0,0,.38);
+    }
+
+    /* ### EDITABLE: Barra superior e inferior. */
+    header, footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 0 16px;
+      background: #060816;
+      border-bottom: 1px solid var(--line);
+    }
+    footer {
+      min-height: 34px;
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      color: var(--label);
+      font-size: 13px;
+    }
+
+    /* ### EDITABLE: Texto del nombre de fase lunar en la barra superior. */
+    .phase {
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .date {
+      color: var(--label);
+      font-size: 14px;
+    }
+
+    /* ### EDITABLE: Distribucion de las dos columnas principales. */
+    main {
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) 1.2fr;
+      min-height: 430px;
+    }
+    .moon-panel {
+      display: grid;
+      place-items: center;
+      padding: 34px 20px;
+      border-right: 1px dashed rgba(180,150,60,.45);
+    }
+    .moon-wrap {
+      display: grid;
+      place-items: center;
+      gap: 18px;
+    }
+
+    /* ### EDITABLE: Tamano visual de la luna. */
+    .moon {
+      width: 210px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      background: #e6dcbe;
+      border: 2px solid #9b947a;
+      box-shadow: 0 0 50px rgba(255, 218, 126, .22);
+    }
+    .shade {
+      position: absolute;
+      inset: 0;
+      background: var(--shadow);
+    }
+
+    /* ### EDITABLE: Posicion y tamano de los crateres decorativos. */
+    .crater {
+      position: absolute;
+      border-radius: 50%;
+      background: #b2a891;
+      border: 2px solid #cdc3aa;
+      opacity: .82;
+    }
+    .c1 { width: 34px; height: 34px; left: 118px; top: 56px; }
+    .c2 { width: 25px; height: 25px; left: 116px; top: 126px; }
+    .c3 { width: 18px; height: 18px; left: 74px; top: 122px; border: 0; }
+    .day {
+      color: var(--label);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    /* ### EDITABLE: Panel derecho donde van los datos numericos. */
+    .data-panel {
+      display: grid;
+      align-content: center;
+      padding: 34px;
+      gap: 24px;
+    }
+
+    /* ### EDITABLE: Etiquetas pequenas como Iluminacion, Proxima luna llena y Distancia. */
+    .label {
+      color: var(--label);
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ### EDITABLE: Numero grande del porcentaje de iluminacion. */
+    .big {
+      color: var(--gold);
+      font-size: clamp(44px, 8vw, 76px);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* ### EDITABLE: Barra de progreso de iluminacion. */
+    .bar {
+      height: 12px;
+      border: 1px solid var(--line);
+      background: #2d260f;
+      margin-top: 12px;
+    }
+    .fill {
+      width: 0%;
+      height: 100%;
+      background: var(--gold-soft);
+      transition: width .35s ease;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+    .value {
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .sub {
+      color: var(--gold-soft);
+      margin-top: 6px;
+    }
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3cc83c;
+      box-shadow: 0 0 12px #3cc83c;
+      animation: blink 1s steps(2, start) infinite;
+    }
+    @keyframes blink { 50% { opacity: .25; } }
+
+    /* ### EDITABLE: Version movil; se activa en pantallas pequenas. */
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      main { grid-template-columns: 1fr; }
+      .moon-panel { border-right: 0; border-bottom: 1px dashed rgba(180,150,60,.45); }
+      .data-panel { padding: 26px 20px; }
+      .row { grid-template-columns: 1fr; }
+      .moon { width: min(220px, 68vw); }
+    }
+  </style>
+</head>
+<body>
+  <section class="screen">
+    <header>
+      <!-- ### EDITABLE: Texto inicial mientras cargan los datos. Luego JavaScript lo reemplaza. -->
+      <div class="phase" id="phaseName">FASE LUNAR</div>
+      <div class="date" id="date">--/--/----</div>
+    </header>
+    <main>
+      <section class="moon-panel">
+        <div class="moon-wrap">
+          <!-- ### EDITABLE: Esta seccion dibuja la luna con CSS. No cambies los id si quieres conservar la actualizacion automatica. -->
+          <div class="moon" aria-label="Luna">
+            <div class="shade" id="shade"></div>
+            <div class="crater c1"></div>
+            <div class="crater c2"></div>
+            <div class="crater c3"></div>
+          </div>
+          <div class="day" id="age">Dia --</div>
+        </div>
+      </section>
+      <section class="data-panel">
+        <div>
+          <!-- ### EDITABLE: Textos de las tarjetas de datos. -->
+          <div class="label">Iluminacion</div>
+          <div class="big" id="illumination">--%</div>
+          <div class="bar"><div class="fill" id="fill"></div></div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Proxima luna llena</div>
+            <div class="value" id="nextFullDate">---</div>
+            <div class="sub" id="countdown">en --d --h</div>
+          </div>
+          <div>
+            <div class="label">Distancia</div>
+            <div class="value" id="distance">--- km</div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <!-- ### EDITABLE: Texto del pie de pagina. -->
+      <span>Interfaz web de Raspberry Pi</span>
+      <span class="pulse"></span>
+    </footer>
+  </section>
+
+  <script>
+    // ### EDITABLE: Formato de numeros. Puedes usar "es-EC", "es-ES" o "es-US".
+    const fmtKm = new Intl.NumberFormat("es-EC");
+
+    // ### EDITABLE: Traduccion de las fases que llegan desde Python.
+    const phaseTranslations = {
+      "NEW MOON": "LUNA NUEVA",
+      "WAXING CRESCENT": "LUNA CRECIENTE",
+      "FIRST QUARTER": "CUARTO CRECIENTE",
+      "WAXING GIBBOUS": "GIBOSA CRECIENTE",
+      "FULL MOON": "LUNA LLENA",
+      "WANING GIBBOUS": "GIBOSA MENGUANTE",
+      "LAST QUARTER": "CUARTO MENGUANTE",
+      "WANING CRESCENT": "LUNA MENGUANTE"
+    };
+
+    // ### EDITABLE: Abreviaturas de meses para la fecha de proxima luna llena.
+    const monthTranslations = {
+      Jan: "Ene",
+      Feb: "Feb",
+      Mar: "Mar",
+      Apr: "Abr",
+      May: "May",
+      Jun: "Jun",
+      Jul: "Jul",
+      Aug: "Ago",
+      Sep: "Sep",
+      Oct: "Oct",
+      Nov: "Nov",
+      Dec: "Dic"
+    };
+
+    function spanishPhase(name) {
+      return phaseTranslations[name] || name;
+    }
+
+    function spanishDate(text) {
+      return text.replace(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/g, match => {
+        return monthTranslations[match] || match;
+      });
+    }
+
+    // ### EDITABLE AVANZADO: Esta funcion controla como se ve la sombra de la luna.
+    function moonShadow(data) {
+      const illum = Math.max(0, Math.min(1, data.illumination));
+      const idx = data.phaseIndex;
+      const dark = "#080d22";
+
+      if (idx === 0) return dark;
+      if (idx === 4) return "transparent";
+
+      const p = Math.round(illum * 100);
+      if (idx >= 1 && idx <= 3) {
+        return `linear-gradient(90deg, ${dark} 0 ${100 - p}%, transparent ${100 - p}% 100%)`;
+      }
+      return `linear-gradient(90deg, transparent 0 ${p}%, ${dark} ${p}% 100%)`;
+    }
+
+    // ### EDITABLE AVANZADO: Esta funcion actualiza los textos usando la API /api/moon.
+    async function updateMoon() {
+      const response = await fetch("/api/moon", { cache: "no-store" });
+      const data = await response.json();
+
+      document.getElementById("phaseName").textContent = spanishPhase(data.phaseName);
+      document.getElementById("date").textContent = data.date;
+      document.getElementById("age").textContent = `Dia ${data.age.toFixed(1)}`;
+      document.getElementById("illumination").textContent = `${data.illuminationPercent}%`;
+      document.getElementById("fill").style.width = `${data.illuminationPercent}%`;
+      document.getElementById("nextFullDate").textContent = spanishDate(data.nextFullDate);
+      document.getElementById("countdown").textContent = `en ${data.daysToFull}d ${data.hoursToFull}h`;
+      document.getElementById("distance").textContent = `${fmtKm.format(Math.round(data.distance))} km`;
+      document.getElementById("shade").style.background = moonShadow(data);
+    }
+
+    // ### EDITABLE: Cambia 60000 si quieres actualizar mas o menos seguido. 60000 = 60 segundos.
+    updateMoon().catch(console.error);
+    setInterval(() => updateMoon().catch(console.error), 60000);
+  </script>
+</body>
+</html>
